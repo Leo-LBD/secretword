@@ -32,23 +32,23 @@ function App() {
   const [guessedLetters, setGuessedLetters] = useState([])
   const [wrongLetters, setWrongLetters] = useState([])
   const [guesses, setGuesses] = useState([guessesQty])
-  const [score, setScore] = useState([0])
+  const [score, setScore] = useState(0)
 
-  const pickWordAndCategory = () => {
+  const pickWordAndCategory = useCallback(() => {
     const categories = Object.keys(words)
     const category = categories[Math.floor(Math.random()* Object.keys(categories).length)]
 
-    console.log(category)
-
     //pick a random word
     const word = words[category][Math.floor(Math.random()* words[category].length)]
-    console.log(word)
 
     return {word, category}
-  }
+  }, [words])
 
   //starts the secret word game
-  const startGame = () => {
+  const startGame = useCallback(() => {
+
+    //clear all letters
+    clearLetterStates()
 
     //pick word and pick category 
     const{word, category} = pickWordAndCategory()
@@ -57,16 +57,13 @@ function App() {
     let wordLetters = word.split("")
     wordLetters = wordLetters.map((l) => l.toLowerCase())
 
-    console.log(word, category)
-    console.log(wordLetters)
-
     //fill states
     setPickedWord(word)
     setPickedCategory(category)
     setLetters(wordLetters)
 
     setGameStage(stages[1].name)
-  }
+  },[pickWordAndCategory])
 
   //process the letter input
   const verifyLetter = (letter) =>{
@@ -74,7 +71,6 @@ function App() {
     const normalizedLetter = letter.toLowerCase()
 
     // check if letter has already been utilized
-
     if(guessedLetters.includes(normalizedLetter) || 
     wrongLetters.includes(normalizedLetter)
     ){
@@ -101,13 +97,26 @@ const clearLetterStates = () => {
   setWrongLetters([])
 }
 
-useEffect(()=>{
-  if(guesses <= 0){
-    clearLetterStates()
-    setGameStage(stages[2].name)
-  }
+  // check if guesses ended
+  useEffect(()=>{
+    if(guesses <= 0){
+      clearLetterStates()
+      setGameStage(stages[2].name)
+    }
 
-}, [guesses])
+  }, [guesses])
+
+  // win condition
+  useEffect(()=>{    
+    const uniqueLetters = [... new Set(letters)]
+
+    if(guessedLetters.length === uniqueLetters.length){
+      setScore((actualScore) => actualScore +=100)
+
+      startGame()
+    }
+  }, [guessedLetters, letters, startGame])
+
   //Restart the game
   const retry = () =>{
     setScore(0)
